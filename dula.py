@@ -9,7 +9,10 @@ clock = pygame.time.Clock()
 for_font = pygame.font.Font(None, 24)
 title_font = pygame.font.Font(None, 48)
 
-main_menu = ["1. Start Game", "2. Scores", "3. Help"]
+bg_image = pygame.image.load("FreeImageBG/nature_2/natOrig.png").convert()
+bg_image = pygame.transform.scale(bg_image, (800, 400))
+
+main_menu = ["1. Start Game", "2. Highest Score", "3. Help"]
 choosing = 0
 player = pygame.Rect(200, 200, 10, 35) # (x, y, width, height)
 
@@ -21,6 +24,7 @@ monsters = [
 ]
 
 monster_speed = 4
+score = 0
 
 current_screen = "menu"
 current_question = ""
@@ -62,15 +66,12 @@ while True:
                 if event.key == pygame.K_RETURN:
                     if player_input.strip():  # only proceed if answer is not blank
                         if player_input.strip().lower() == current_answer.strip().lower():
-                            feedback = "Correct!"
-                            monster_speed += 1  # speed up on correct answer
-                            # Add a new monster every time speed hits a multiple of 4 (8, 12, 16...)
-                            if monster_speed >= 8 and monster_speed % 4 == 0:
-                                offset = len(monsters) * 200
-                                monsters.append(
-                                    pygame.Rect(800 + offset, random.randint(10, 375), 15, 15)
-                                )
-                                feedback = f"Correct! Speed {monster_speed}! +1 Monster! ({len(monsters)} total)"
+                            # Add a new monster on correct answer
+                            offset = len(monsters) * 200
+                            monsters.append(
+                                pygame.Rect(800 + offset, random.randint(10, 375), 15, 15)
+                            )
+                            feedback = f"Correct! +1 Monster! ({len(monsters)} total)"
                         else:
                             feedback = f"Wrong! Answer: {current_answer}"
                         feedback_timer = 120  # 120 frames = ~2 seconds at 60fps
@@ -91,7 +92,7 @@ while True:
                 if event.key == pygame.K_ESCAPE:
                     current_screen = "menu"
 
-    screen.fill((0, 0, 0))
+    screen.blit(bg_image, (0, 0))
 
     if current_screen == "menu":
         title = title_font.render("Dodge Quiz", True, "cyan")
@@ -107,9 +108,9 @@ while True:
 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_UP]:
-            player.move_ip(0, -5)# (x, y)
+            player.move_ip(0, -8)# (x, y)
         if keys[pygame.K_DOWN]:
-            player.move_ip(0, 5)
+            player.move_ip(0, 8)
 
         if player.top < 0:
             player.top = 0
@@ -124,6 +125,9 @@ while True:
             if m.right < 0:
                 m.x = 800
                 m.y = random.randint(10, 375)
+                score += 1  # player successfully dodged this monster
+                if score % 4 == 0:
+                    monster_speed = min(monster_speed + 0.50, 16)
 
             # --- Collision: switch to question screen (only once per frame) ---
             if not hit_this_frame and player.colliderect(m):
@@ -140,6 +144,10 @@ while True:
         speed_text = for_font.render(f"Speed: {monster_speed:.1f}", True, "orange")
         screen.blit(speed_text, (10, 10))
 
+        # Show score
+        score_text = for_font.render(f"Score: {score}", True, "orange")
+        screen.blit(score_text, (10, 40))
+
         back = for_font.render("Press ESC to return to menu", True, "gray")
         screen.blit(back, (260, 375))
 
@@ -147,6 +155,9 @@ while True:
     elif current_screen == "question":
         q_title = title_font.render("Question!", True, "yellow")
         screen.blit(q_title, (400 - q_title.get_width() // 2, 20))
+
+        score_text = for_font.render(f"Score: {score}", True, "orange")
+        screen.blit(score_text, (10, 40))
 
         # Word-wrap the question
         words = current_question.split()
@@ -200,6 +211,7 @@ while True:
         back = for_font.render("Press ESC to return to menu", True, "gray")
         screen.blit(back, (260, 350))
 
+    # ===================== HELP =====================
     elif current_screen == "help":
         heading = title_font.render("Help", True, "violet")
         screen.blit(heading, (340, 80))
